@@ -85,8 +85,6 @@ func login(w http.ResponseWriter, r *http.Request)     {
 		return
 	}
 
-	fmt.Fprintln(w,"Login Successful!")
-
 	sessionToken := generateToken(32)
 	csrfToken := generateToken(32)
 
@@ -115,5 +113,53 @@ func login(w http.ResponseWriter, r *http.Request)     {
 
 
 }
-func logout(w http.ResponseWriter, r *http.Request)    {}
-func protected(w http.ResponseWriter, r *http.Request) {}
+func logout(w http.ResponseWriter, r *http.Request)    {
+	if err:= Authorize(r); err != nil{
+		er:=http.StatusUnauthorized
+		http.Error(w,"Unauthorized",er)
+		return
+	}
+
+	//clearing the tokens from the cookie if we log out
+	http.SetCookie(w,&http.Cookie{
+		Name: "session_token",
+		Value: "",
+		Expires: time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	})
+
+	//clearing the csrf token
+	http.SetCookie(w,&http.Cookie{
+		Name: "csrf_token",
+		Value: "",
+		Expires: time.Now().Add(-time.Hour),
+		HttpOnly: false,
+	})
+
+	//clear tokens from the database when log out
+	username := r.FormValue("username")
+	user,_ := users[username]
+	user.SessionToken = ""
+	user.CSRFToken = ""
+	users[username] = user
+	fmt.Fprintln(w,"logged out successfully")
+
+
+}
+
+
+func protected(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost{
+			er := http.StatusMethodNotAllowed
+			http.Error(w,"invalid request method",er)
+			return
+		}
+		if err:= Authorize(r); err!= nil{
+			er:= http.StatusUnauthorized
+			http.Error(w,"Unauthorized",er)
+			return
+		}
+
+		username := r.FormValue("username")
+		fmt.Fprintf(w,"CSRF validation successful! Welcome %s",username)
+}
