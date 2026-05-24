@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 )
 
 type Login struct {
@@ -68,7 +70,47 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 //logging a user in , session and crsf token used here
 func login(w http.ResponseWriter, r *http.Request)     {
+	if r.Method != http.MethodPost{
+		er := http.StatusMethodNotAllowed
+		http.Error(w,"invalid request method",er)
+		return
+	}
+	username := r.FormValue("username")
+	password := r.FormValue("password")
 
+	user,ok := users[username]
+	if !ok || !checkPasswordHash(password,user.HashedPassword){
+		er:=http.StatusUnauthorized
+		http.Error(w,"invalid username or password",er)
+		return
+	}
+
+	fmt.Fprintln(w,"Login Successful!")
+
+	sessionToken := generateToken(32)
+	csrfToken := generateToken(32)
+
+	//setting a session cookie
+	//cookies work by sending a request from the browser to the backened everytime a request is made
+	http.SetCookie(w,&http.Cookie{
+		Name : "session_token",
+		Value: sessionToken,
+		Expires: time.Now().Add(24 * time.Hour), //any request after 24 hours will get auto logged out
+		HttpOnly: true, //ensures the session token can't be accessed by frontend js in the client
+	})
+	//setting the csrf token inside acookie
+		http.SetCookie(w,&http.Cookie{
+		Name : "csrf_token",
+		Value: csrfToken,
+		Expires: time.Now().Add(24 * time.Hour), //any request after 24 hours will get auto logged out
+		HttpOnly: false, //asking if should be accessible by client side
+	})
+
+	//storing the session token
+	user.SessionToken = sessionToken
+	user.CSRFToken = csrfToken
+	users[username] = user
+	fmt.Fprintln(w,"Login Successful!")
 
 
 
