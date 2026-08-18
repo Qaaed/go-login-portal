@@ -7,7 +7,7 @@ flowchart TD
     F --> G[(User Database)]
     G --> H{Credentials Valid?}
 
-    H -->|No| I[Return Login Error]
+    H -->|No| I[Return Login Errors]
     I --> B
 
     H -->|Yes| J[Generate Session / JWT]
