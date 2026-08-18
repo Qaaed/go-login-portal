@@ -1,0 +1,23 @@
+flowchart TD
+    A[User] --> B[Go Login Portal]
+    B --> C{Enter Credentials}
+    C --> D[POST /login]
+    D --> E[Go Backend]
+    E --> F[Validate Input]
+    F --> G[(User Database)]
+    G --> H{Credentials Valid?}
+
+    H -->|No| I[Return Login Error]
+    I --> B
+
+    H -->|Yes| J[Generate Session / JWT]
+    J --> K[Set Secure Cookie]
+    K --> L[Redirect to Dashboard]
+
+    L --> M{Authenticated Request}
+    M --> N[Go Auth Middleware]
+    N --> O{Valid Session / JWT?}
+
+    O -->|No| B
+    O -->|Yes| P[Protected Route]
+    P --> Q[Dashboard / User Resources]
